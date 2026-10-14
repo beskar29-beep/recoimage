@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VisionKNN — Offline Object Recognition & Voice Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VisionKNN v3.0 — Mobile AI Object & Voice Studio</title>
   <style>
     :root {
       --bg-main: #0b0f19;
@@ -16,7 +16,6 @@
       --accent-glow: rgba(56, 189, 248, 0.25);
       --success: #10b981;
       --danger: #ef4444;
-      --warning: #f59e0b;
       --radius: 14px;
     }
 
@@ -25,6 +24,7 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
@@ -33,56 +33,58 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 14px;
     }
 
     /* Header */
     header {
       max-width: 1200px;
       width: 100%;
-      margin: 0 auto 20px auto;
+      margin: 0 auto 16px auto;
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 15px;
-      padding-bottom: 16px;
+      gap: 12px;
+      padding-bottom: 14px;
       border-bottom: 1px solid var(--border);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .brand-icon {
-      width: 40px;
-      height: 40px;
+      width: 38px;
+      height: 38px;
       border-radius: 10px;
       background: linear-gradient(135deg, #38bdf8, #6366f1);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
-      font-size: 18px;
+      font-size: 16px;
       box-shadow: 0 4px 15px var(--accent-glow);
     }
 
     .brand h1 {
-      font-size: 1.35rem;
+      font-size: 1.2rem;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .brand p {
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       color: var(--text-muted);
     }
 
     .header-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -93,7 +95,7 @@
       margin: 0 auto;
       display: grid;
       grid-template-columns: 1.15fr 0.85fr;
-      gap: 24px;
+      gap: 18px;
       flex: 1;
     }
 
@@ -108,10 +110,10 @@
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 20px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 14px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     }
 
@@ -120,11 +122,11 @@
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .card-title {
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       display: flex;
       align-items: center;
@@ -132,8 +134,8 @@
     }
 
     .badge {
-      font-size: 0.72rem;
-      padding: 4px 10px;
+      font-size: 0.7rem;
+      padding: 3px 9px;
       border-radius: 999px;
       background: rgba(56, 189, 248, 0.12);
       color: var(--accent);
@@ -152,6 +154,7 @@
       position: relative;
       width: 100%;
       aspect-ratio: 4 / 3;
+      min-height: 280px;
       background: #05080f;
       border-radius: 12px;
       overflow: hidden;
@@ -165,28 +168,29 @@
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1);
+      /* Unmirrored by default for Android rear camera */
+      transform: scaleX(1);
       transition: transform 0.2s ease;
     }
 
-    video.unmirrored {
-      transform: scaleX(1);
+    video.mirrored {
+      transform: scaleX(-1);
     }
 
     /* Permission Start Overlay */
     .start-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(11, 15, 25, 0.92);
-      backdrop-filter: blur(8px);
+      background: rgba(11, 15, 25, 0.95);
       z-index: 20;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 18px;
       text-align: center;
-      gap: 14px;
+      gap: 12px;
+      overflow-y: auto;
     }
 
     .start-overlay.hidden {
@@ -194,28 +198,36 @@
     }
 
     .start-overlay h3 {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: var(--text-main);
     }
 
     .start-overlay p {
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       color: var(--text-muted);
-      max-width: 420px;
-      line-height: 1.5;
+      max-width: 400px;
+      line-height: 1.45;
     }
 
-    .error-box {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.4);
-      color: #fca5a5;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 0.82rem;
-      max-width: 460px;
-      line-height: 1.5;
-      display: none;
+    .diag-box {
+      width: 100%;
+      max-width: 440px;
+      background: #080c14;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      line-height: 1.45;
       text-align: left;
+      font-family: monospace;
+    }
+
+    .diag-box.error {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: #fecaca;
+      font-family: inherit;
     }
 
     /* Target Focus Box Overlay */
@@ -227,48 +239,46 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle, transparent 38%, rgba(5, 8, 15, 0.55) 85%);
     }
 
     .reticle-box {
-      width: 52%;
+      width: 54%;
       aspect-ratio: 1 / 1;
-      border: 2px dashed rgba(255, 255, 255, 0.45);
+      border: 2px dashed rgba(255, 255, 255, 0.55);
       border-radius: 16px;
       position: relative;
       transition: all 0.15s ease;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.28);
     }
 
     .reticle-box.capturing {
       border-color: var(--accent);
       border-style: solid;
-      box-shadow: 0 0 25px var(--accent-glow), 0 0 0 9999px rgba(0, 0, 0, 0.35);
-      transform: scale(0.97);
+      box-shadow: 0 0 25px var(--accent-glow), 0 0 0 9999px rgba(0, 0, 0, 0.4);
+      transform: scale(0.96);
     }
 
     .reticle-hint {
-      margin-top: 10px;
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.85);
-      background: rgba(11, 15, 25, 0.75);
-      padding: 4px 12px;
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: rgba(255, 255, 255, 0.9);
+      background: rgba(11, 15, 25, 0.78);
+      padding: 4px 10px;
       border-radius: 99px;
-      backdrop-filter: blur(4px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
     /* Live Prediction HUD on Video */
     .prediction-hud {
       position: absolute;
-      bottom: 14px;
-      left: 14px;
-      right: 14px;
-      background: rgba(15, 23, 42, 0.9);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
+      bottom: 10px;
+      left: 10px;
+      right: 10px;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 12px;
-      padding: 12px 16px;
+      padding: 10px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -282,7 +292,7 @@
     }
 
     .hud-subtitle {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       text-transform: uppercase;
       letter-spacing: 0.06em;
       color: var(--text-muted);
@@ -307,17 +317,17 @@
     }
 
     .hud-prediction {
-      font-size: 1.35rem;
+      font-size: 1.2rem;
       font-weight: 800;
       color: var(--text-main);
     }
 
     .hud-confidence {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--accent);
       background: rgba(56, 189, 248, 0.12);
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: 8px;
     }
 
@@ -327,17 +337,17 @@
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
       background: #0e1422;
       border: 1px solid var(--border);
-      padding: 10px 14px;
+      padding: 10px 12px;
       border-radius: 10px;
     }
 
     .voice-bar-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
@@ -347,9 +357,8 @@
       border: 1px solid var(--border);
       padding: 6px 10px;
       border-radius: 8px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       outline: none;
-      cursor: pointer;
     }
 
     /* Controls & Inputs */
@@ -361,7 +370,7 @@
 
     input[type="text"] {
       flex: 1;
-      min-width: 180px;
+      min-width: 170px;
       background: #0b0f19;
       border: 1px solid var(--border);
       color: var(--text-main);
@@ -369,27 +378,27 @@
       border-radius: 10px;
       font-size: 0.95rem;
       outline: none;
-      transition: border 0.2s;
     }
 
     input[type="text"]:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-glow);
     }
 
     button, .btn-label {
       cursor: pointer;
       border: 1px solid transparent;
       border-radius: 10px;
-      padding: 11px 16px;
-      font-size: 0.88rem;
+      padding: 11px 15px;
+      font-size: 0.86rem;
       font-weight: 600;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
       transition: all 0.15s ease;
       user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
       white-space: nowrap;
     }
 
@@ -399,24 +408,10 @@
       font-weight: 700;
     }
 
-    .btn-primary:hover {
-      filter: brightness(1.1);
-      transform: translateY(-1px);
-    }
-
-    .btn-primary:active {
-      transform: translateY(1px);
-    }
-
     .btn-secondary {
       background: var(--bg-card-hover);
       color: var(--text-main);
       border-color: var(--border);
-    }
-
-    .btn-secondary:hover {
-      background: #28354d;
-      border-color: #3b4d6e;
     }
 
     .btn-voice-on {
@@ -431,13 +426,9 @@
       border-color: rgba(239, 68, 68, 0.3);
     }
 
-    .btn-danger:hover {
-      background: rgba(239, 68, 68, 0.22);
-    }
-
     .btn-mini {
-      padding: 6px 11px;
-      font-size: 0.76rem;
+      padding: 6px 10px;
+      font-size: 0.75rem;
       border-radius: 7px;
     }
 
@@ -445,19 +436,18 @@
     .class-list {
       display: flex;
       flex-direction: column;
-      gap: 12px;
-      max-height: 440px;
+      gap: 10px;
+      max-height: 420px;
       overflow-y: auto;
-      padding-right: 4px;
     }
 
     .empty-state {
       text-align: center;
-      padding: 40px 20px;
+      padding: 32px 16px;
       color: var(--text-muted);
       border: 1px dashed var(--border);
       border-radius: 12px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       line-height: 1.5;
     }
 
@@ -465,16 +455,15 @@
       background: #0e1422;
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 12px 14px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      transition: border-color 0.2s;
     }
 
     .class-item.active-match {
       border-color: var(--accent);
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.12);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.14);
     }
 
     .class-top {
@@ -487,16 +476,15 @@
 
     .class-name {
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .sample-count {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
-      font-weight: 500;
       background: var(--bg-card);
       padding: 2px 8px;
       border-radius: 99px;
@@ -508,7 +496,6 @@
       gap: 6px;
     }
 
-    /* Progress Bar */
     .meter-bg {
       width: 100%;
       height: 8px;
@@ -528,81 +515,65 @@
     .stats-bar {
       display: flex;
       justify-content: space-between;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
       padding-top: 8px;
       border-top: 1px solid var(--border);
       flex-wrap: wrap;
       gap: 8px;
     }
-
-    .tips-box {
-      background: rgba(56, 189, 248, 0.06);
-      border: 1px solid rgba(56, 189, 248, 0.2);
-      border-radius: 10px;
-      padding: 12px 14px;
-      font-size: 0.8rem;
-      color: #cbd5e1;
-      line-height: 1.5;
-    }
-
-    .tips-box strong {
-      color: var(--accent);
-    }
   </style>
 </head>
 <body>
 
-  <!-- Top Header & Export/Import Controls -->
+  <!-- Top Header -->
   <header>
     <div class="brand">
       <div class="brand-icon">AI</div>
       <div>
-        <h1>VisionKNN Studio</h1>
-        <p>100% Offline Object Recognition + Voice Announcer</p>
+        <h1>VisionKNN <span class="badge">v3.0 Mobile</span></h1>
+        <p>Offline Object Recognition & Voice Announcer</p>
       </div>
     </div>
 
     <div class="header-actions">
-      <button class="btn-secondary" id="downloadBtn" title="Download trained mathematical vectors as JSON">
-        ⬇ Download Model (.json)
-      </button>
-      <label class="btn-secondary btn-label" title="Upload previously downloaded JSON model">
-        ⬆ Upload Model (.json)
+      <button class="btn-secondary btn-mini" id="downloadBtn">⬇ Download (.json)</button>
+      <label class="btn-secondary btn-label btn-mini">
+        ⬆ Upload (.json)
         <input type="file" id="uploadInput" accept=".json" style="display: none;" />
       </label>
-      <button class="btn-danger" id="clearAllBtn" title="Wipe all training data from memory">
-        ✕ Reset Memory
-      </button>
+      <button class="btn-danger btn-mini" id="clearAllBtn">✕ Reset</button>
     </div>
   </header>
 
   <!-- Main Workspace -->
   <div class="workspace">
 
-    <!-- Left Column: Live Camera, Voice Controls & Capture -->
+    <!-- Left Column: Live Camera & Voice -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <span>📷 Live Camera Feed</span>
-          <span class="badge" id="camStatusBadge">Permission Needed</span>
+          <span>📷 Camera Feed</span>
+          <span class="badge" id="camStatusBadge">Standby</span>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <select id="cameraSelect" title="Choose Camera Device" style="display: none;"></select>
-          <button class="btn-secondary btn-mini" id="mirrorBtn">⇄ Flip Mirror</button>
-          <button class="btn-secondary btn-mini" id="switchCamBtn">↻ Switch Lens</button>
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+          <select id="cameraSelect" style="display: none;"></select>
+          <button class="btn-secondary btn-mini" id="mirrorBtn">⇄ Mirror</button>
+          <button class="btn-secondary btn-mini" id="switchCamBtn">↻ Flip Lens</button>
         </div>
       </div>
 
       <div class="video-wrapper">
-        <!-- Explicit Click Overlay to Guarantee Browser Permission Prompt & Audio Unlock -->
+        <!-- Start Overlay with Direct Click Trigger & Diagnostics -->
         <div class="start-overlay" id="startOverlay">
-          <h3>Enable Camera & Voice Engine</h3>
-          <p>Click below to trigger your browser's camera permission prompt and unlock offline voice speech.</p>
-          <button class="btn-primary" id="startCamBtn" style="font-size: 1rem; padding: 14px 24px;">
-            📷 Click to Start Camera & Voice
+          <h3>Start Android Camera</h3>
+          <p>Tap the button below to trigger Chrome's camera permission popup.</p>
+          <button class="btn-primary" id="startCamBtn" style="font-size: 1rem; padding: 14px 22px;">
+            📷 Tap to Request Camera Permission
           </button>
-          <div class="error-box" id="camErrorBox"></div>
+          <div class="diag-box" id="diagBox">
+            Status: Ready. Waiting for button tap...
+          </div>
         </div>
 
         <video id="webcam" autoplay playsinline muted></video>
@@ -610,7 +581,7 @@
         <!-- Center Focus Reticle -->
         <div class="reticle-overlay">
           <div class="reticle-box" id="reticleBox"></div>
-          <div class="reticle-hint">Place object inside box for training & recognition</div>
+          <div class="reticle-hint">Center object inside box</div>
         </div>
 
         <!-- Live Recognition Output Banner -->
@@ -618,7 +589,7 @@
           <div class="hud-label-group">
             <span class="hud-subtitle">
               Detected Object
-              <span class="speaking-dot" id="speakingDot" title="Speaking aloud..."></span>
+              <span class="speaking-dot" id="speakingDot"></span>
             </span>
             <span class="hud-prediction" id="liveLabel">Waiting for training...</span>
           </div>
@@ -629,37 +600,29 @@
       <!-- Voice Announcer Bar -->
       <div class="voice-bar">
         <div class="voice-bar-left">
-          <button class="btn-voice-on btn-mini" id="voiceToggleBtn">
-            🔊 Voice: ON
-          </button>
-          <select id="voiceModeSelect" title="When should the assistant speak?">
+          <button class="btn-voice-on btn-mini" id="voiceToggleBtn">🔊 Voice: ON</button>
+          <select id="voiceModeSelect">
             <option value="change">Speak when object changes</option>
             <option value="repeat">Repeat every 4 seconds</option>
           </select>
         </div>
-        <button class="btn-secondary btn-mini" id="testVoiceBtn" title="Test speaker output">
-          🗣 Speak Current
-        </button>
+        <button class="btn-secondary btn-mini" id="testVoiceBtn">🗣 Test Voice</button>
       </div>
 
       <!-- Capture & Label Controls -->
       <div class="controls-row">
-        <input type="text" id="labelInput" placeholder="Enter object label (e.g., Apple, Phone, Keys)..." autocomplete="off" />
-        <button class="btn-primary" id="captureBtn" title="Click or Hold to capture multiple samples quickly">
+        <input type="text" id="labelInput" placeholder="Type object name (e.g., Bottle, Keys)..." autocomplete="off" />
+        <button class="btn-primary" id="captureBtn" style="flex: 1;">
           + Capture Sample (Hold for Burst)
         </button>
       </div>
-
-      <div class="tips-box">
-        <strong>Pro Tip:</strong> Type your object's name, place it inside the center target box, and <strong>hold down Capture Sample</strong> for 2 seconds while slightly tilting it. When you point the camera at a trained object, it will automatically <strong>speak the object's name aloud</strong>!
-      </div>
     </div>
 
-    <!-- Right Column: Trained Classes & Real-Time Probabilities -->
+    <!-- Right Column: Trained Classes -->
     <div class="card">
       <div class="card-header">
         <div class="card-title">
-          <span>🧠 Trained Object Classes</span>
+          <span>🧠 Trained Classes</span>
         </div>
         <span class="badge" id="totalSamplesBadge">0 Samples in RAM</span>
       </div>
@@ -667,42 +630,35 @@
       <div class="class-list" id="classList">
         <div class="empty-state">
           No objects trained yet.<br><br>
-          1. Click <strong>Start Camera</strong> on the left.<br>
-          2. Type a label and capture a few samples, or click <strong>Upload Model (.json)</strong> at the top.
+          1. Tap <strong>Request Camera Permission</strong> above.<br>
+          2. Place an object in the center box, type its name, and hold <strong>Capture Sample</strong>.
         </div>
       </div>
 
       <div class="stats-bar">
-        <span>Engine: <strong>Chromaticity + Sobel Edge KNN</strong></span>
-        <span>Images Saved: <strong>0 (Vectors Only)</strong></span>
+        <span>Engine: <strong>Chromaticity + Edge KNN</strong></span>
+        <span>Photos Stored: <strong>0 (Vectors Only)</strong></span>
       </div>
     </div>
 
   </div>
 
   <script>
-    /**
-     * 100% OFFLINE VANILLA JS MACHINE LEARNING + SPEECH SYNTHESIS ENGINE
-     * - No external libraries
-     * - No images stored after capture (instant conversion to 32x32 math feature vector)
-     * - Speaks detected object aloud using native offline Web Speech API
-     */
-
-    // --- State Management (Strictly in RAM) ---
-    let dataset = []; // Array of { label: string, vector: number[] }
-    let facingMode = "environment";
-    let isMirrored = true;
+    // --- State Management ---
+    let dataset = [];
+    let facingMode = "environment"; // Default to rear camera on Android
+    let isMirrored = false;         // Rear camera should not be mirrored
     let burstInterval = null;
     let isCapturing = false;
 
-    // Voice / Speech Synthesis State
+    // Voice State
     let voiceEnabled = true;
     let lastSpokenLabel = "";
     let lastSpokenTime = 0;
     let stableCandidate = "";
     let stableFrames = 0;
 
-    // Offscreen micro-canvas for instant mathematical feature extraction (32x32)
+    // Offscreen 32x32 Canvas for Feature Extraction
     const CROP_SIZE = 32;
     const offscreenCanvas = document.createElement("canvas");
     offscreenCanvas.width = CROP_SIZE;
@@ -713,7 +669,7 @@
     const video = document.getElementById("webcam");
     const startOverlay = document.getElementById("startOverlay");
     const startCamBtn = document.getElementById("startCamBtn");
-    const camErrorBox = document.getElementById("camErrorBox");
+    const diagBox = document.getElementById("diagBox");
     const camStatusBadge = document.getElementById("camStatusBadge");
     const cameraSelect = document.getElementById("cameraSelect");
     const reticleBox = document.getElementById("reticleBox");
@@ -728,14 +684,68 @@
     const testVoiceBtn = document.getElementById("testVoiceBtn");
     const speakingDot = document.getElementById("speakingDot");
 
-    // --- 1. Bulletproof Camera Initialization & Permission Handling ---
-    async function requestCamera(deviceId = null) {
-      camErrorBox.style.display = "none";
-
-      // Check if browser blocked mediaDevices due to insecure context (e.g., file:// on mobile)
+    // --- 1. Direct Android Chrome Camera Request (First Line on Click!) ---
+    startCamBtn.addEventListener("click", async () => {
+      // Must be the VERY FIRST call inside the click handler on Android Chrome
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showCameraError(
-          "<strong>Browser Blocked Camera API:</strong><br>" +
-          "Your browser disables camera access on local <code>file://</code> links (common on Android/iOS phones).<br><br>" +
-          "<strong>How to fix:</strong><br>" +
-          "• On <strong>PC/La
+        diagBox.className = "diag-box error";
+        diagBox.innerHTML =
+          "<strong>Error: navigator.mediaDevices is unavailable.</strong><br>" +
+          "Make sure your URL starts with <code>https://</code> (e.g., <code>https://username.github.io/...</code>) and is opened directly in Chrome, not inside an in-app preview viewer.";
+        return;
+      }
+
+      diagBox.className = "diag-box";
+      diagBox.innerHTML = "Requesting camera from Android Chrome... (If no popup appears within 2 seconds, see instructions below)";
+
+      try {
+        let stream;
+        try {
+          // Request rear camera first
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: facingMode } },
+            audio: false
+          });
+        } catch (firstErr) {
+          // Fallback to any available camera
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+        }
+
+        await attachStream(stream);
+
+        // Unlock speech synthesis AFTER camera is granted
+        unlockSpeechEngine();
+
+      } catch (err) {
+        handleCameraError(err);
+      }
+    });
+
+    async function attachStream(stream) {
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+      }
+      video.srcObject = stream;
+      video.setAttribute("playsinline", "true");
+      await video.play();
+
+      startOverlay.classList.add("hidden");
+      camStatusBadge.textContent = "Live";
+      camStatusBadge.classList.add("active-cam");
+
+      populateCameraList();
+    }
+
+    function handleCameraError(err) {
+      console.error("Camera error:", err);
+      diagBox.className = "diag-box error";
+      camStatusBadge.textContent = "Blocked";
+      camStatusBadge.classList.remove("active-cam");
+
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        diagBox.innerHTML =
+          `<strong>Chrome Blocked the Popup (${err.name}):</strong><br>` +
+          `Android Chrome has this website set 
