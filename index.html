@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VisionKNN — Offline Object Recognition Studio</title>
+  <style>
+    :root {
+      --bg-main: #0b0f19;
+      --bg-card: #151c2c;
+      --bg-card-hover: #1e293b;
+      --border: #2a364f;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.25);
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    /* Header */
+    header {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto 20px auto;
+      display: flex;
+       flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #38bdf8, #6366f1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .brand h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Main Grid */
+    .workspace {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    @media (max-width: 900px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      font-weight: 600;
+    }
+
+    /* Camera Section */
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #05080f;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      transition: transform 0.2s ease;
+    }
+
+    video.unmirrored {
+      transform: scaleX(1);
+    }
+
+    /* Target Focus Box Overlay */
+    .reticle-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, transparent 38%, rgba(5, 8, 15, 0.55) 85%);
+    }
+
+    .reticle-box {
+      width: 52%;
+      aspect-ratio: 1 / 1;
+      border: 2px dashed rgba(255, 255, 255, 0.45);
+      border-radius: 16px;
+      position: relative;
+      transition: all 0.15s ease;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.22);
+    }
+
+    .reticle-box.capturing {
+      border-color: var(--accent);
+      border-style: solid;
+      box-shadow: 0 0 25px var(--accent-glow), 0 0 0 9999px rgba(0, 0, 0, 0.35);
+      transform: scale(0.97);
+    }
+
+    .reticle-hint {
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.8);
+      background: rgba(11, 15, 25, 0.75);
+      padding: 4px 12px;
+      border-radius: 99px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* Live Prediction HUD on Video */
+    .prediction-hud {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      right: 14px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .hud-label-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .hud-subtitle {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+
+    .hud-prediction {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    .hud-confidence {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+      padding: 6px 12px;
+      border-radius: 8px;
+    }
+
+    /* Controls & Inputs */
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 180px;
+      background: #0b0f19;
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    button, .btn-label {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #38bdf8, #3b82f6);
+      color: #0b0f19;
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:active {
+      transform: translateY(1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card-hover);
+      color: var(--text-main);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: #28354d;
+      border-color: #3b4d6e;
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.22);
+    }
+
+    /* Class List & Live Meters */
+    .class-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 410px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .class-item {
+      background: #0e1422;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.2s;
+    }
+
+    .class-item.active-match {
+      border-color: var(--accent);
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.12);
+    }
+
+    .class-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .class-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sample-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      background: var(--bg-card);
+      padding: 2px 8px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+    }
+
+    .class-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-mini {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+    }
+
+    /* Progress Bar */
+    .meter-bg {
+      width: 100%;
+      height: 8px;
+      background: #1e293b;
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #10b981);
+      border-radius: 99px;
+      transition: width 0.12s ease-out;
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .tips-box {
+      background: rgba(56, 189, 248, 0.06);
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+
+    .tips-box strong {
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header & Export/Import Controls -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">AI</div>
+      <div>
+        <h1>VisionKNN Studio</h1>
+        <p>100% Offline Feature-Vector Recognition (No Images Stored)</p>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-secondary" id="downloadBtn" title="Download trained mathematical vectors as JSON">
+        ⬇ Download Model (.json)
+      </button>
+      <label class="btn-secondary btn-label" title="Upload previously downloaded JSON model">
+        ⬆ Upload Model (.json)
+        <input type="file" id="uploadInput" accept=".json" style="display: none;" />
+      </label>
+      <button class="btn-danger" id="clearAllBtn" title="Wipe all training data from memory">
+        ✕ Reset Memory
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <div class="workspace">
+
+    <!-- Left Column: Live Camera & Capture -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>📷 Live Camera Feed</span>
+          <span class="badge" id="fpsBadge">Ready</span>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-secondary btn-mini" id="mirrorBtn">⇄ Flip Mirror</button>
+          <button class="btn-secondary btn-mini" id="switchCamBtn">↻ Switch Camera</button>
+        </div>
+      </div>
+
+      <div class="video-wrapper">
+        <video id="webcam" autoplay playsinline muted></video>
+        
+        <!-- Center Focus Reticle -->
+        <div class="reticle-overlay">
+          <div class="reticle-box" id="reticleBox"></div>
+          <div class="reticle-hint">Place object inside box for training & recognition</div>
+        </div>
+
+        <!-- Live Recognition Output Banner -->
+        <div class="prediction-hud">
+          <div class="hud-label-group">
+            <span class="hud-subtitle">Detected Object</span>
+            <span class="hud-prediction" id="liveLabel">Waiting for training...</span>
+          </div>
+          <div class="hud-confidence" id="liveConfidence">0%</div>
+        </div>
+      </div>
+
+      <!-- Capture & Label Controls -->
+      <div class="controls-row">
+        <input type="text" id="labelInput" placeholder="Enter object label (e.g., Coffee Mug, Watch, Hand)..." autocomplete="off" />
+        <button class="btn-primary" id="captureBtn" title="Click or Hold to capture multiple samples quickly">
+          + Capture Sample (Hold for Burst)
+        </button>
+      </div>
+
+      <div class="tips-box">
+        <strong>Pro Tip for High Accuracy:</strong> Type your object's name, place it inside the center target box, and <strong>hold down the Capture button</strong> for 2 seconds while slightly tilting the object. You can also train a <em>"Background"</em> label when nothing is in the box!
+      </div>
+    </div>
+
+    <!-- Right Column: Trained Classes & Real-Time Probabilities -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <span>🧠 Trained Object Classes</span>
+        </div>
+        <span class="badge" id="totalSamplesBadge">0 Samples in RAM</span>
+      </div>
+
+      <div class="class-list" id="classList">
+        <div class="empty-state">
+          No objects trained yet.<br><br>
+          Enter a label on the left and capture a few samples, or click <strong>Upload Model (.json)</strong> at the top to restore a saved session.
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <span>Engine: <strong>Color Chromaticity + Sobel Edge KNN (K=5)</strong></span>
+        <span>Images Saved: <strong>0 (Vectors Only)</strong></span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /**
+     * 100% OFFLINE VANILLA JS MACHINE LEARNING ENGINE
+     * Extracts lighting-normalized Color + Sobel Edge Gradients from the center crop,
+     * discards the image pixels immediately, and classifies via Cosine Similarity KNN.
+     */
+
+    // --- State Management (Strictly in RAM, no localStorage) ---
+    let dataset = []; // Array of { label: string, vector: number[] }
+    let facingMode = "environment";
+    let isMirrored = true;
+    let burstInterval = null;
+
+    // Offscreen micro-canvas for instant mathematical feature extraction (32x32)
+    const CROP_SIZE = 32;
+    const offscreenCanvas = document.createElement("canvas");
+    offscreenCanvas.width = CROP_SIZE;
+    offscreenCanvas.height = CROP_SIZE;
+    const ctx = offscreenCanvas.getContext("2d", { willReadFrequently: true });
+
+    // DOM Elements
+    const video = document.getElementById("webcam");
+    const reticleBox = document.getElementById("reticleBox");
+    const labelInput = document.getElementById("labelInput");
+    const captureBtn = document.getElementById("captureBtn");
+    const classListEl = document.getElementById("classList");
+    const liveLabelEl = document.getElementById("liveLabel");
+    const liveConfidenceEl = document.getElementById("liveConfidence");
+    const totalSamplesBadge = document.getElementById("totalSamplesBadge");
+    const fpsBadge = document.getElementById("fpsBadge");
+
+    // --- 1. Initialize Webcam ---
+    async function startCamera() {
+      try {
+        if (video.srcObject) {
+          video.srcObject.getTracks().forEach(track => track.stop());
+        }
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: false
+        });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Camera access error: Please allow camera permissions or open via localhost/HTTPS.");
+        console.error(err);
+      }
+    }
+
+    document.getElementById("mirrorBtn").addEventListener("click", () => {
+      isMirrored = !isMirrored;
+      video.classList.toggle("unmirrored", !isMirrored);
+    });
+
+    document.getElementById("switchCamBtn").addEventListener("click", () => {
+      facingMode = facingMode === "user" ? "environment" : "user";
+      startCamera();
+    });
+
+    // --- 2. Mathematical Feature Extractor (No Image Saved) ---
+    function extractFeatureVector() {
+      if (video.readyState < 2) return null;
+
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      const minDim = Math.min(vw, vh);
+      // Sample the center 52% square (matching the UI reticle box)
+      const boxSize = minDim * 0.52;
+      const sx = (vw - boxSize) / 2;
+      const sy = (vh - boxSize) / 2;
+
+      // Draw center crop onto 32x32 offscreen canvas
+      ctx.drawImage(video, sx, sy, boxSize, boxSize, 0, 0, CROP_SIZE, CROP_SIZE);
+      const imgData = ctx.getImageData(0, 0, CROP_SIZE, CROP_SIZE).data;
+
+      // Clear canvas immediately so no visual frame persists
+      ctx.clearRect(0, 0, CROP_SIZE, CROP_SIZE);
+
+      const vector = [];
+      const gray = new Float32Array(CROP_SIZE * CROP_SIZE);
+
+      // Step A: Compute luminance & pooled 8x8 chromaticity blocks (invariant to brightness shifts)
+      const BLOCK = 4; // 32 / 4 = 8x8 grid
+      for (let by = 0; by < CROP_SIZE; by += BLOCK) {
+        for (let bx = 0; bx < CROP_SIZE; bx += BLOCK) {
+          let rSum = 0, gSum = 0, bSum = 0;
+          for (let y = 0; y < BLOCK; y++) {
+            for (let x = 0; x < BLOCK; x++) {
+              const py = by + y;
+              const px = bx + x;
+              const idx = (py * CROP_SIZE + px) * 4;
+              const r = imgData[idx];
+              const g = imgData[idx + 1];
+              const b = imgData[idx + 2];
+              rSum += r;
+              gSum += g;
+              bSum += b;
+              gray[py * CROP_SIZE + px] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            }
+          }
+          const totalRGB = rSum + gSum + bSum + 1e-5;
+          // Chromaticity ratios + normalized intensity
+          vector.push(
+            (rSum / totalRGB) * 1.5,
+            (gSum / totalRGB) * 1.5,
+            (bSum / totalRGB) * 1.5,
+            (totalRGB / (BLOCK * BLOCK * 765)) * 0.5
+          );
+        }
+      }
+
+      // Step B: Sobel Edge Gradients (Captures object shape & texture in 8x8 blocks)
+      for (let by = 0; by < CROP_SIZE; by += BLOCK) {
+        for (let bx = 0; bx < CROP_SIZE; bx += BLOCK) {
+          let edgeX = 0, edgeY = 0;
+          for (let y = 0; y < BLOCK; y++) {
+            for (let x = 0; x < BLOCK; x++) {
+              const py = Math.min(CROP_SIZE - 2, Math.max(1, by + y));
+              const px = Math.min(CROP_SIZE - 2, Math.max(1, bx + x));
+              const gx = Math.abs(gray[py * CROP_SIZE + (px + 1)] - gray[py * CROP_SIZE + (px - 1)]);
+              const gy = Math.abs(gray[(py + 1) * CROP_SIZE + px] - gray[(py - 1) * CROP_SIZE + px]);
+              edgeX += gx;
+              edgeY += gy;
+            }
+          }
+          vector.push((edgeX / (BLOCK * BLOCK)) * 2.2, (edgeY / (BLOCK * BLOCK)) * 2.2);
+        }
+      }
+
+      // Step C: L2 Normalize the vector so Cosine Similarity is a fast dot product
+      let magSq = 0;
+      for (let i = 0; i < vector.length; i++) magSq += vector[i] * vector[i];
+      const mag = Math.sqrt(magSq) || 1;
+      for (let i = 0; i < vector.length; i++) {
+        // Round to 4 decimals to keep exported JSON files super compact
+        vector[i] = Number((vector[i] / mag).toFixed(4));
+      }
+
+      return vector;
+    }
+
+    // --- 3. KNN Classification (Cosine Similarity) ---
+    function classifyLiveVector(liveVec) {
+      if (!liveVec || dataset.length === 0) return null;
+
+      // Calculate similarity to every stored vector
+      const similarities = dataset.map(item => {
+        let dot = 0;
+        const v = item.vector;
+        for (let i = 0; i < liveVec.length; i++) {
+          dot += liveVec[i] * v[i];
+        }
+        return { label: item.label, score: Math.max(0, dot) };
+      });
+
+      // Sort highest similarity first and take top K neighbors
+      similarities.sort((a, b) => b.score - a.score);
+      const K = Math.min(5, similarities.length);
+      const topK = similarities.slice(0, K);
+
+      const classScores = {};
+      let totalWeight = 0;
+
+      // Exponential weighting favors very close matches
+      topK.forEach(match => {
+        const weight = Math.pow(match.score, 12);
+        classScores[match.label] = (classScores[match.label] || 0) + weight;
+        totalWeight += weight;
+      });
+
+      const probabilities = {};
+      let bestLabel = "";
