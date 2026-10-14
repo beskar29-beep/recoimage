@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#101827">
+<title>Offline Object Recognizer</title>
+
+<style>
+:root {
+  --bg: #101827;
+  --panel: #1b2739;
+  --panel2: #243249;
+  --text: #f3f6fc;
+  --muted: #a8b6ca;
+  --accent: #64e6b2;
+  --danger: #ff7777;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, Arial, sans-serif;
+}
+
+header {
+  padding: 22px 16px;
+  background: #172235;
+  border-bottom: 1px solid #33425a;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 23px;
+}
+
+header p {
+  color: var(--muted);
+  margin: 7px 0 0;
+  font-size: 13px;
+}
+
+main {
+  width: 100%;
+  max-width: 650px;
+  margin: auto;
+  padding: 14px;
+}
+
+.card {
+  background: var(--panel);
+  padding: 16px;
+  margin-bottom: 15px;
+  border-radius: 15px;
+  border: 1px solid #2e3c52;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+p, label {
+  line-height: 1.5;
+}
+
+.small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+input, select, button {
+  width: 100%;
+  border-radius: 10px;
+  font: inherit;
+  padding: 12px;
+}
+
+input, select {
+  color: var(--text);
+  background: #101827;
+  border: 1px solid #43536d;
+  margin: 6px 0 10px;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+  font-weight: 650;
+  margin: 5px 0;
+  background: var(--accent);
+  color: #10251e;
+}
+
+button.secondary {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid #43536d;
+}
+
+button.danger {
+  background: #572a35;
+  color: #fff;
+}
+
+button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+video {
+  width: 100%;
+  background: #05080d;
+  border-radius: 12px;
+  max-height: 55vh;
+  object-fit: contain;
+}
+
+#preview {
+  width: 100%;
+  min-height: 35px;
+}
+
+.status {
+  background: #101827;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 10px;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.result {
+  text-align: center;
+  padding: 18px 8px;
+}
+
+.resultName {
+  color: var(--accent);
+  font-size: 28px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.resultScore {
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.labelItem {
+  padding: 12px;
+  border-radius: 10px;
+  background: #101827;
+  border: 1px solid #35445c;
+  margin: 8px 0;
+}
+
+.labelName {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.labelMeta {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 5px 0;
+}
+
+.labelActions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.labelActions button {
+  font-size: 13px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #344158;
+  margin: 16px 0;
+}
+
+footer {
+  text-align: center;
+  padding: 15px;
+  font-size: 12px;
+  color: var(--muted);
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>📷 Offline Object Recognizer</h1>
+  <p>Teach objects · Recognize with your camera · Hear their names</p>
+</header>
+
+<main>
+
+<section class="card">
+  <h2>1. Camera</h2>
+
+  <video id="camera" autoplay playsinline muted></video>
+
+  <div class="status" id="cameraStatus">
+    Camera is not running.
+  </div>
+
+  <button id="startCamera">Start Rear Camera</button>
+  <button id="stopCamera" class="secondary">Stop Camera</button>
+
+  <p class="small">
+    Camera access requires browser permission. Some Android browsers
+    restrict camera access when an HTML file is opened directly.
+  </p>
+</section>
+
+<section class="card">
+  <h2>2. Create a Label</h2>
+
+  <label for="newLabel">Object name</label>
+  <input id="newLabel" type="text"
+         maxlength="80"
+         placeholder="Example: Water Bottle">
+
+  <button id="createLabel">Create Label</button>
+
+  <div class="status" id="labelStatus">
+    Create a label before capturing training examples.
+  </div>
+</section>
+
+<section class="card">
+  <h2>3. Teach the Object</h2>
+
+  <label for="trainLabel">Choose a label</label>
+  <select id="trainLabel">
+    <option value="">No labels created</option>
+  </select>
+
+  <button id="captureTraining">Capture & Learn This View</button>
+
+  <div class="status" id="trainingStatus">
+    Select a label and capture an object.
+  </div>
+
+  <p class="small">
+    Capture different angles, distances and lighting conditions.
+    Each capture is processed immediately. Original training images
+    are not stored in the training database.
+  </p>
+</section>
+
+<section class="card">
+  <h2>4. Recognize Objects</h2>
+
+  <button id="startRecognition">▶ Start Recognition</button>
+  <button id="stopRecognition" class="secondary">Stop Recognition</button>
+  <button id="speakAgain" class="secondary">🔊 Speak Result Again</button>
+
+  <div class="result">
+    <div class="resultName" id="resultName">Waiting...</div>
+    <div class="resultScore" id="resultScore">
+      Start recognition to analyze the camera.
+    </div>
+  </div>
+
+  <label for="threshold">Minimum similarity threshold</label>
+  <input id="threshold" type="range"
+         min="0.35" max="0.90" step="0.01" value="0.65">
+
+  <div class="small">
+    Threshold: <span id="thresholdValue">0.65</span>.
+    Increase it to reject more uncertain matches. Similarity is not
+    a calibrated probability of correctness.
+  </div>
+
+  <div class="status" id="recognitionStatus">
+    Recognition is stopped.
+  </div>
+
+  <p class="small">
+    Recognition runs locally. Announcements are repeated only after
+    the recognized label changes. An unknown result resets the
+    announcement state.
+  </p>
+</section>
+
+<section class="card">
+  <h2>5. Your Learned Objects</h2>
+
+  <div class="status" id="databaseStatus">Loading local database...</div>
+  <div id="labelList"></div>
+
+  <hr>
+
+  <button id="exportData" class="secondary">Export Training Data</button>
+
+  <label for="importFile">Import a previously exported database</label>
+  <input id="importFile" type="file" accept=".json,application/json">
+
+  <button id="clearAll" class="danger">Delete All Training Data</button>
+
+  <p class="small">
+    Training data stays in this browser's local storage. Export a
+    backup if you want to transfer it or protect it against browser
+    data deletion. Exported data contains labels and numerical
+    features, not the original photographs.
+  </p>
+</section>
+
+</main>
+
+<footer>
+  Single HTML file · No external libraries · No network model
+</footer>
+
+<script>
+"use strict";
+
+/*
+ * OFFLINE OBJECT RECOGNIZER
+ *
+ * This application uses hand-designed image descriptors rather
+ * than a pretrained neural network.
+ *
+ * Stored information:
+ *   - User-created labels
+ *   - Numerical image descriptors
+ *
+ * Original training photographs are not persisted.
+ */
+
+const DB_KEY = "offline_object_recognizer_v1";
+
+const $ = id => document.getElementById(id);
+
+const camera = $("camera");
+
+let stream = null;
+let recognitionRunning = false;
+let recognitionTimer = null;
+let processingFrame = false;
+let lastAnnounced = "";
+let lastPrediction = "";
+let lastPredictionCount = 0;
+let lastSpeakTime = 0;
+
+let database = {
+  version: 1,
+  labels: []
+};
+
+const scratch = document.createElement("canvas");
+const scratchContext = scratch.getContext("2d", {
+  willReadFrequently: true
+});
+
+/* ---------- DATABASE ---------- */
+
+function saveDatabase() {
+  try {
+    localStorage.setItem(DB_KEY, JSON.stringify(database));
+    updateDatabaseStatus();
+    return true;
+  } catch (error) {
+    alert(
+      "Could not save training data. Browser storage may be full. " +
+      "Export a backup or delete some examples."
+    );
+    return false;
+  }
+}
+
+function loadDatabase() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+
+    if (
+      parsed &&
+      parsed.version === 1 &&
+      Array.isArray(parsed.labels)
+    ) {
+      database.labels = parsed.labels.filter(item =>
+        item &&
+        typeof item.id === "string" &&
+        typeof item.name === "string" &&
+        Array.isArray(item.examples)
+      );
+
+      for (const label of database.labels) {
+        label.examples = label.examples.filter(example =>
+          example &&
+          Array.isArray(example.features) &&
+          example.features.length === 256 &&
+          example.features.every(Number.isFinite)
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Could not load database:", error);
+  }
+}
+
+/* ---------- LABEL MANAGEMENT ---------- */
+
+function selectedLabel() {
+  return database.labels.find(
+    label => label.id === $("trainLabel").value
+  );
+}
+
+function createLabel() {
+  const name = $("newLabel").value.trim();
+
+  if (!name) {
+    alert("Enter an object name first.");
+    return;
+  }
+
+  const duplicate = database.labels.some(
+    label => label.name.toLowerCase() === name.toLowerCase()
+  );
+
+  if (duplicate) {
+    alert("A label with this name already exists.");
+    return;
+  }
+
+  const label = {
+    id: makeId(),
+    name,
+    examples: []
+  };
+
+  database.labels.push(label);
+
+  if (!saveDatabase()) {
+    database.labels.pop();
+    return;
+  }
+
+  $("newLabel").value = "";
+  renderLabels();
+  $("trainLabel").value = label.id;
+
+  $("labelStatus").textContent =
+    'Created "' + label.name + '". You can now capture examples.';
+}
+
+function makeId() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+
+  return Date.now().toString(36) +
+    Math.random().toString(36).slice(2);
+}
+
+function renderLabels() {
+  const select = $("trainLabel");
+  const previous = select.value;
+
+  select.innerHTML = "";
+
+  if (database.labels.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No labels created";
+    select.appendChild(option);
+  } else {
+    for (const label of database.labels) {
+      const option = document.createElement("option");
+      option.value = label.id;
+      option.textContent =
+        label.name + " (" + label.examples.length + ")";
+      select.appendChild(option);
+    }
+
+    if (database.labels.some(label => label.id === previous)) {
+      select.value = previous;
+    }
+  }
+
+  const list = $("labelList");
+  list.innerHTML = "";
+
+  if (database.labels.length === 0) {
+    list.textContent = "No trained labels yet.";
+  }
+
+  for (const label of database.labels) {
+    const item = document.createElement("div");
+    item.className = "labelItem";
+
+    const name = document.createElement("div");
+    name.className = "labelName";
+    name.textContent = label.name;
+
+    const meta = document.createElement("div");
+    meta.className = "labelMeta";
+    meta.textContent =
+      label.examples.length + " training examples";
+
+    const actions = document.createElement("div");
+    actions.className = "labelActions";
+
+    const add = document.createElement("button");
+    add.textContent = "Select Label";
+    add.className = "secondary";
+    add.onclick = () => {
+      select.value = label.id;
+      $("trainingStatus").textContent =
+        'Selected "' + label.name + '". Capture another view.';
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const rename = document.createElement("button");
+    rename.textContent = "Rename";
+    rename.className = "secondary";
+    rename.onclick = () => renameLabel(label.id);
+
+    const remove = document.createElement("button");
+    remove.textContent = "Delete Label";
+    remove.className = "danger";
+    remove.onclick = () => deleteLabel(label.id);
+
+    const undo = document.createElement("button");
+    undo.textContent = "Remove Last Photo";
+    undo.className = "secondary";
+    undo.disabled = label.examples.length === 0;
+    undo.onclick = () => removeLastExample(label.id);
+
+    actions.append(add, rename, undo, remove);
+    item.append(name, meta, actions);
+    list.appendChild(item);
+  }
+
+  updateDatabaseStatus();
+}
+
+function renameLabel(id) {
+  const label = database.labels.find(item => item.id === id);
+  if (!label) return;
+
+  const name = prompt("New label name:", label.name);
+  if (name === null) return;
+
+  const trimmed = name.trim();
+
+  if (!trimmed) {
+    alert("The label name cannot be empty.");
+    return;
+  }
+
+  if (database.labels.some(item =>
+    item.id !== id &&
+    item.name.toLowerCase() === trimmed.toLowerCase()
+  )) {
+    alert("Another label already has that name.");
+    return;
+  }
+
+  const old = label.name;
+  label.name = trimmed;
+
+  if (!saveDatabase()) {
+    label.name = old;
+    return;
+  }
+
+  renderLabels();
+}
+
+function deleteLabel(id) {
+  const label = database.labels.find(item => item.id === id);
+  if (!label) return;
+
+  if (!confirm(
+    'Delete "' + label.name + '" and all its training features?'
+  )) return;
+
+  const oldLabels = database.labels;
+  database.labels = database.labels.filter(item => item.id !== id);
+
+  if (!saveDatabase()) {
+    database.labels = oldLabels;
+    return;
+  }
+
+  if (lastAnnounced === label.name) lastAnnounced = "";
+
+  renderLabels();
+}
+
+function removeLastExample(id) {
+  const label = database.labels.find(item => item.id === id);
+  if (!label || label.examples.length === 0) return;
+
+  label.examples.pop();
+
+  if (!saveDatabase()) return;
+
+  renderLabels();
+}
+
+/* ---------- CAMERA ---------- */
+
+async function startCamera() {
+  if (!navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia) {
+    $("cameraStatus").textContent =
+      "Camera unavailable. Open this page in a browser that supports camera access, using a secure context.";
+    return;
+  }
+
+  try {
+    if (stream) stopCamera();
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 640 },
+        height: { ideal: 480 }
+      }
+    });
+
+    camera.srcObject = stream;
+
+    await camera.play();
+
+    $("cameraStatus").textContent =
+      "Camera running. Rear camera preferred.";
+
+  } catch (error) {
+    $("cameraStatus").textContent =
+      "Camera error: " + error.message +
+      ". Check permissions and try opening this page in Chrome.";
+  }
+}
+
+function stopCamera() {
+  stopRecognition();
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
+
+  camera.srcObject = null;
+
+  $("cameraStatus").textContent = "Camera stopped.";
+}
+
+/* ---------- IMAGE FEATURE EXTRACTION ---------- */
+
+/*
+ * Convert an image into a 16 x 16 grid of grayscale brightness
+ * values. The result is a 256-value descriptor normalized to
+ * reduce sensitivity to overall brightness.
+ *
+ * This is intentionally lightweight, but is NOT semantic vision.
+ * Background and object placement can strongly affect the result.
+ */
+
+function extractFeatures(videoElement) {
+  if (
+    !videoElement.videoWidth ||
+    !videoElement.videoHeight
+  ) {
+    throw new Error("Camera image is not ready yet.");
+  }
+
+  const grid = 16;
+
+  scratch.width = grid;
+  scratch.height = grid;
+
+  scratchContext.drawImage(videoElement, 0, 0, grid, grid);
+
+  const image = scratchContext.getImageData(0, 0, grid, grid);
+  const values = [];
+
+  let mean = 0;
+
+  for (let i = 0; i < image.data.length; i += 4) {
+    const r = image.data[i];
+    const g = image.data[i + 1];
+    const b = image.data[i + 2];
+
+    const gray = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+    values.push(gray);
+    mean += gray;
+  }
+
+  mean /= values.length;
+
+  let variance = 0;
+
+  for (const value of values) {
+    variance += (value - mean) ** 2;
+  }
+
+  const deviation = Math.sqrt(variance / values.length) || 1;
+
+  return values.map(value => {
+    return Math.max(-3, Math.min(3, (value - mean) / deviation));
+  });
+}
+
+/* ---------- SIMILARITY ---------- */
+
+/*
+ * Convert mean squared descriptor distance into a similarity
+ * score. This score is heuristic, not a probability.
+ */
+
+function similarity(a, b) {
+  if (!a || !b || a.length !== b.length) return 0;
+
+  let squaredDistance = 0;
+
+  for (let i = 0; i < a.length; i++) {
+    const diff = a[i] - b[i];
+    squaredDistance += diff * diff;
+  }
+
+  const mse = squaredDistance / a.length;
+
+  return Math.exp(-mse / 2);
+}
+
+function findBestMatch(features) {
+  let best = null;
+
+  for (const label of database.labels) {
+    for (const example of label.examples) {
+      const score = similarity(features, example.features);
+
+      if (!best || score > best.score) {
+        best = {
+          label: label.name,
+          score
+        };
+      }
+    }
+  }
+
+  return best;
+}
+
+/* ---------- TRAINING ---------- */
+
+async function captureTraining() {
+  const label = selectedLabel();
+
+  if (!label) {
+    alert("Create or select a label first.");
+    return;
+  }
+
+  if (!stream || camera.readyState < 2) {
+    alert("Start the camera and wait for the preview.");
+    return;
+  }
+
+  $("captureTraining").disabled = true;
+  $("trainingStatus").textContent = "Extracting visual features...";
+
+  try {
+    /*
+     * Only the numerical descriptor is retained.
+     * The canvas is reused and no photo file is created.
+     */
+
+    const features = extractFeatures(camera);
+
+    label.examples.push({ features });
+
+    if (!saveDatabase()) {
+      label.examples.pop();
+      return;
+    }
+
+    $("trainingStatus").textContent =
+      'Learned another view of "' + label.name +
+      '". Total examples: ' + label.examples.length + ".";
+
+    renderLabels();
+
+  } catch (error) {
+    $("trainingStatus").textContent =
+      "Training failed: " + error.message;
+  } finally {
+    $("captureTraining").disabled = false;
+  }
+}
+
+/* ---------- RECOGNITION ---------- */
+
+function startRecognition() {
+  if (!stream || camera.readyState < 2) {
+    alert("Start the camera first.");
+    return;
+  }
+
+  if (!database.labels.some(label => label.examples.length > 0)) {
+    alert("Train at least one object first.");
+    return;
+  }
+
+  if (!("speechSynthesis" in window)) {
+    $("recognitionStatus").textContent =
+      "Speech synthesis is unavailable. Recognition can still run.";
+  }
+
+  recognitionRunning = true;
+  lastAnnounced = "";
+  lastPrediction = "";
+  lastPredictionCount = 0;
+
+  $("recognitionStatus").textContent =
+    "Recognition running. Point the camera at a trained object.";
+
+  runRecognitionLoop();
+}
+
+function stopRecognition() {
+  recognitionRunning = false;
+
+  if (recognitionTimer !== null) {
+    clearTimeout(recognitionTimer);
+    recognitionTimer = null;
+  }
+
+  $("recognitionStatus").textContent = "Recognition stopped.";
+}
+
+async function runRecognitionLoop() {
+  if (!recognitionRunning || processingFrame) return;
+
+  processingFrame = true;
+
+  try {
+    const features = extractFeatures(camera);
+    const best = findBestMatch(features);
+    const threshold = Number($("threshold").value);
+
+    if (!best || best.score < threshold) {
+      $("resultName").textContent = "Unknown Object";
+      $("resultScore").textContent =
+        best
+          ? "Best similarity: " + (best.score * 100).toFixed(1) + "%"
+          : "No trained examples available.";
+
+      lastPrediction = "";
+      lastPredictionCount = 0;
+      lastAnnounced = "";
+
+    } else {
+      $("resultName").textContent = best.label;
+      $("resultScore").textContent =
+        "Similarity: " + (best.score * 100).toFixed(1) + "%";
+
+      if (lastPrediction === best.label) {
+        lastPredictionCount++;
+      } else {
+        lastPrediction = best.label;
+        lastPredictionCount = 1;
+      }
+
+      /*
+       * Require multiple consecutive matching frames to reduce
+       * announcements caused by one unstable frame.
+       */
+
+      if (
+        lastPredictionCount >= 3 &&
+        lastAnnounced !== best.label
+      ) {
+        speakLabel(best.label);
+        lastAnnounced = best.label;
+      }
+
+      $("recognitionStatus").textContent =
+        "Analyzing camera frames locally.";
+    }
+
+  } catch (error) {
+    $("recognitionStatus").textContent = error.message;
+  } finally {
+    processingFrame = false;
+  }
+
+  if (recognitionRunning) {
+    recognitionTimer = setTimeout(runRecognitionLoop, 500);
+  }
+}
+
+/* ---------- SPEECH ---------- */
+
+function speakLabel(name) {
+  if (!("speechSynthesis" in window)) return;
+
+  const now = Date.now();
+
+  if (now - lastSpeakTime < 1200) return;
+
+  lastSpeakTime = now;
+
+  window.speechSynthesis.cancel();
+
+  const utterance = ne
